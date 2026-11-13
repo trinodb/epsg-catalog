@@ -1,0 +1,9 @@
+**/target/
+.idea/
+*.iml
+.DS_Store
+pom.xml.releaseBackup
+pom.xml.tag
+pom.xml.next
+pom.xml.bak
+release.properties

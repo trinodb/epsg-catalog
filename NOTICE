@@ -1,0 +1,9 @@
+EPSG catalog
+
+This product contains code extracted from Trino
+(https://github.com/trinodb/trino), licensed under the Apache License, Version 2.0.
+
+The EPSG geodetic dataset is owned and maintained by the International
+Association of Oil & Gas Producers (IOGP), https://epsg.org/.
+The catalog artifact includes the EPSG terms of use and upstream notices
+at io/trino/epsg/EPSG-LICENSE.txt and io/trino/epsg/EPSG-NOTICE.txt.

@@ -1,0 +1,118 @@
+name: Release new version
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - name: Check release branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Releases are only allowed from main"
+            exit 1
+          fi
+
+      - name: Check release configuration
+        env:
+          RELEASE_GPG_SECRET_KEY: ${{ secrets.RELEASE_GPG_SECRET_KEY }}
+          RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          RELEASE_MAVEN_CENTRAL_USERNAME: ${{ vars.RELEASE_MAVEN_CENTRAL_USERNAME }}
+          RELEASE_MAVEN_CENTRAL_TOKEN: ${{ secrets.RELEASE_MAVEN_CENTRAL_TOKEN }}
+        run: |
+          for credential in RELEASE_GPG_SECRET_KEY RELEASE_GPG_PASSPHRASE RELEASE_MAVEN_CENTRAL_USERNAME RELEASE_MAVEN_CENTRAL_TOKEN; do
+            if [ -z "${!credential}" ]; then
+              echo "::error::Missing release configuration: ${credential}"
+              exit 1
+            fi
+          done
+
+      - name: Checkout code
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java and signing
+        uses: actions/setup-java@v6.2.0
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+          gpg-private-key: ${{ secrets.RELEASE_GPG_SECRET_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          server-id: sonatype-central-portal
+          server-username: MAVENCENTRAL_USERNAME
+          server-password: MAVENCENTRAL_PASSWORD
+
+      - name: Build and test
+        run: ./mvnw -B -ntp -V clean verify -Pci
+
+      - name: Check release archives
+        run: python3 .github/bin/check-artifacts.py
+
+      - name: Configure git
+        run: |
+          git config user.name "Trino Release"
+          git config user.email "trino-bot@trino.io"
+
+      - name: Prepare release
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+        run: ./mvnw -B -ntp release:prepare -Poss-release
+
+      - name: Determine release version
+        run: |
+          version=$(sed -n 's/^scm.tag=//p' release.properties)
+          test -n "${version}"
+          git rev-parse --verify "refs/tags/${version}"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          echo "Releasing version: ${version}"
+
+      - name: Stage release locally
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+        run: ./mvnw -B -ntp release:perform -Poss-release
+
+      - name: Check staged release archives
+        run: python3 target/checkout/.github/bin/check-artifacts.py
+
+      - name: Validate staged release
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          MAVENCENTRAL_USERNAME: ${{ vars.RELEASE_MAVEN_CENTRAL_USERNAME }}
+          MAVENCENTRAL_PASSWORD: ${{ secrets.RELEASE_MAVEN_CENTRAL_TOKEN }}
+        run: |
+          ./mvnw -B -ntp njord:list -Poss-release
+          ./mvnw -B -ntp njord:status -Poss-release
+          ./mvnw -B -ntp njord:validate -Poss-release -Dnjord.details -Dnjord.full
+
+      - name: Push release commits and tag
+        run: git push --atomic origin HEAD:refs/heads/main "refs/tags/${VERSION}"
+
+      - name: Publish to Maven Central
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          MAVENCENTRAL_USERNAME: ${{ vars.RELEASE_MAVEN_CENTRAL_USERNAME }}
+          MAVENCENTRAL_PASSWORD: ${{ secrets.RELEASE_MAVEN_CENTRAL_TOKEN }}
+        run: ./mvnw -B -ntp njord:publish -Poss-release
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${VERSION}" \
+            --repo="${GITHUB_REPOSITORY}" \
+            --title="${GITHUB_REPOSITORY#*/} ${VERSION}" \
+            --verify-tag \
+            --generate-notes
