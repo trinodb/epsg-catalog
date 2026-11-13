@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.airlift</groupId>
+        <artifactId>airbase</artifactId>
+        <version>424</version>
+        <relativePath />
+    </parent>
+
+    <groupId>io.trino.epsg</groupId>
+    <artifactId>epsg-catalog-root</artifactId>
+    <version>1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>EPSG catalog generator and runtime loader</description>
+    <url>https://github.com/trinodb/epsg-catalog</url>
+    <inceptionYear>2026</inceptionYear>
+
+    <organization>
+        <name>Trino</name>
+        <url>https://trino.io</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Trino contributors</name>
+            <url>https://github.com/trinodb/epsg-catalog/graphs/contributors</url>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>epsg-catalog</module>
+        <module>epsg-catalog-generator</module>
+    </modules>
+
+    <scm>
+        <connection>scm:git:https://github.com/trinodb/epsg-catalog.git</connection>
+        <developerConnection>scm:git:https://github.com/trinodb/epsg-catalog.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/trinodb/epsg-catalog</url>
+    </scm>
+
+    <properties>
+        <project.build.targetJdk>25</project.build.targetJdk>
+
+        <dep.aircompressor.version>3.14</dep.aircompressor.version>
+        <dep.sis.version>1.7</dep.sis.version>
+
+        <air.compiler.fail-warnings>true</air.compiler.fail-warnings>
+        <air.java.version>25</air.java.version>
+        <air.maven.version>3.10.0</air.maven.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>aircompressor-v3</artifactId>
+                <version>${dep.aircompressor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>junit-extensions</artifactId>
+                <version>2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sis.core</groupId>
+                <artifactId>sis-referencing</artifactId>
+                <version>${dep.sis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sis.non-free</groupId>
+                <artifactId>sis-embedded-data</artifactId>
+                <version>${dep.sis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opengis</groupId>
+                <artifactId>geoapi</artifactId>
+                <version>3.0.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <targetPath>META-INF</targetPath>
+                <directory>${air.main.basedir}</directory>
+                <includes>
+                    <include>LICENSE</include>
+                    <include>NOTICE</include>
+                </includes>
+            </resource>
+        </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <configuration>
+                        <!-- Airbase's legacy ruleset paths were removed in PMD 7. -->
+                        <rulesets combine.self="override">
+                            <ruleset>rulesets/java/quickstart.xml</ruleset>
+                        </rulesets>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.7.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+    <profiles>
+        <profile>
+            <id>oss-release</id>
+            <properties>
+                <air.repository.release.url>njord:template:release-sca</air.repository.release.url>
+                <njord.publisher>sonatype-cp</njord.publisher>
+                <njord.publisher.sonatype-cp.releaseRepositoryId>sonatype-central-portal</njord.publisher.sonatype-cp.releaseRepositoryId>
+            </properties>
+        </profile>
+    </profiles>
+</project>
