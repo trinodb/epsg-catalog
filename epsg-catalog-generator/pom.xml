@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.trino.epsg</groupId>
+        <artifactId>epsg-catalog-root</artifactId>
+        <version>1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>epsg-catalog-generator</artifactId>
+    <name>${project.artifactId}</name>
+    <description>EPSG catalog generator</description>
+
+    <properties>
+        <!-- The epsg-catalog module tests the generated catalog -->
+        <skipTests>true</skipTests>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>aircompressor-v3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.sis.core</groupId>
+            <artifactId>sis-referencing</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.sis.non-free</groupId>
+            <artifactId>sis-embedded-data</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opengis</groupId>
+            <artifactId>geoapi</artifactId>
+        </dependency>
+    </dependencies>
+</project>
