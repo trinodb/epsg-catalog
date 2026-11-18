@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.trino.epsg</groupId>
         <artifactId>epsg-catalog-root</artifactId>
-        <version>1-SNAPSHOT</version>
+        <version>1</version>
     </parent>
 
     <artifactId>epsg-catalog</artifactId>
